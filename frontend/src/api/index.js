@@ -1,22 +1,33 @@
 const BASE_URL = "http://127.0.0.1:8000/api";
 
+async function request(url, options = {}) {
+  const r = await fetch(url, options)
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: 'Request failed' }))
+    throw new Error(err.detail || 'Request failed')
+  }
+  return r.json()
+}
+
+const json = (data) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+
 // ── Categories ────────────────────────────────────────────────
-export const getCategories    = () => fetch(`${BASE_URL}/categories`).then(r => r.json());
-export const createCategory   = (data) => fetch(`${BASE_URL}/categories`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
-export const updateCategory   = (id, data) => fetch(`${BASE_URL}/categories/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
-export const deleteCategory   = (id) => fetch(`${BASE_URL}/categories/${id}`, { method: "DELETE" }).then(r => r.json());
+export const getCategories   = () => request(`${BASE_URL}/categories`)
+export const createCategory  = (data) => request(`${BASE_URL}/categories`, { method: "POST", ...json(data) })
+export const updateCategory  = (id, data) => request(`${BASE_URL}/categories/${id}`, { method: "PUT", ...json(data) })
+export const deleteCategory  = (id) => request(`${BASE_URL}/categories/${id}`, { method: "DELETE" })
 
 // ── Products ──────────────────────────────────────────────────
-export const getProducts      = () => fetch(`${BASE_URL}/products`).then(r => r.json());
-export const createProduct    = (data) => fetch(`${BASE_URL}/products`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
-export const updateProduct    = (id, data) => fetch(`${BASE_URL}/products/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
-export const deleteProduct    = (id) => fetch(`${BASE_URL}/products/${id}`, { method: "DELETE" }).then(r => r.json());
+export const getProducts     = () => request(`${BASE_URL}/products`)
+export const createProduct   = (data) => request(`${BASE_URL}/products`, { method: "POST", ...json(data) })
+export const updateProduct   = (id, data) => request(`${BASE_URL}/products/${id}`, { method: "PUT", ...json(data) })
+export const deleteProduct   = (id) => request(`${BASE_URL}/products/${id}`, { method: "DELETE" })
 
 // ── Inventory ─────────────────────────────────────────────────
-export const getInventory     = () => fetch(`${BASE_URL}/inventory`).then(r => r.json());
-export const getLowStock      = () => fetch(`${BASE_URL}/inventory/low`).then(r => r.json());
-export const updateInventory  = (id, data) => fetch(`${BASE_URL}/inventory/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
+export const getInventory    = () => request(`${BASE_URL}/inventory`)
+export const getLowStock     = () => request(`${BASE_URL}/inventory/low`)
+export const updateInventory = (id, data) => request(`${BASE_URL}/inventory/${id}`, { method: "PUT", ...json(data) })
 
 // ── Sales ─────────────────────────────────────────────────────
-export const getSales         = () => fetch(`${BASE_URL}/sales`).then(r => r.json());
-export const createSale       = (data) => fetch(`${BASE_URL}/sales`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json());
+export const getSales        = () => request(`${BASE_URL}/sales`)
+export const createSale      = (data) => request(`${BASE_URL}/sales`, { method: "POST", ...json(data) })

@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { getProducts, createSale, getSales } from '../api'
 
-const emptyItem = { product_id: '', unit_price: '', quantity: 1 }
+const emptyItem = { product_id: '', quantity: 1 }
 
 export default function SalesPage() {
-  const [products,     setProducts]     = useState([])
-  const [items,        setItems]        = useState([{ ...emptyItem }])
-  const [paymentMode,  setPaymentMode]  = useState('cash')
-  const [sales,        setSales]        = useState([])
-  const [error,        setError]        = useState('')
-  const [success,      setSuccess]      = useState('')
-  const [submitting,   setSubmitting]   = useState(false)
+  const [products,    setProducts]    = useState([])
+  const [items,       setItems]       = useState([{ ...emptyItem }])
+  const [paymentMode, setPaymentMode] = useState('cash')
+  const [discount,    setDiscount]    = useState('')   // discount on total
+  const [sales,       setSales]       = useState([])
+  const [error,       setError]       = useState('')
+  const [success,     setSuccess]     = useState('')
+  const [submitting,  setSubmitting]  = useState(false)
 
   useEffect(() => { loadProducts(); loadSales() }, [])
 
@@ -21,23 +22,18 @@ export default function SalesPage() {
 
   async function loadSales() {
     const data = await getSales()
-    setSales(data.slice(0, 20)) // show latest 20
+    setSales(data.slice(0, 20))
   }
 
   function handleProductChange(index, product_id) {
-    const product = products.find(p => p.id === Number(product_id))
     const updated = [...items]
-    updated[index] = {
-      ...updated[index],
-      product_id,
-      unit_price: product ? product.selling_price : ''
-    }
+    updated[index] = { ...updated[index], product_id }
     setItems(updated)
   }
 
-  function handleItemChange(index, field, value) {
+  function handleQtyChange(index, value) {
     const updated = [...items]
-    updated[index] = { ...updated[index], [field]: value }
+    updated[index] = { ...updated[index], quantity: value }
     setItems(updated)
   }
 
@@ -49,16 +45,24 @@ export default function SalesPage() {
     setItems(items.filter((_, i) => i !== index))
   }
 
-  const total = items.reduce((sum, item) => {
-    return sum + (Number(item.quantity) * Number(item.unit_price) || 0)
+  function getProduct(id) {
+    return products.find(p => p.id === Number(id))
+  }
+
+  const subtotal = items.reduce((sum, item) => {
+    const p = getProduct(item.product_id)
+    return sum + (p ? p.selling_price * Number(item.quantity) : 0)
   }, 0)
+
+  const discountAmt = Number(discount) || 0
+  const total       = Math.max(0, subtotal - discountAmt)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    const validItems = items.filter(i => i.product_id && i.unit_price && i.quantity)
+    const validItems = items.filter(i => i.product_id && i.quantity > 0)
     if (validItems.length === 0) {
       setError('Add at least one product.')
       return
@@ -70,16 +74,17 @@ export default function SalesPage() {
         payment_mode: paymentMode,
         items: validItems.map(i => ({
           product_id: Number(i.product_id),
-          unit_price: Number(i.unit_price),
+          unit_price: getProduct(i.product_id)?.selling_price || 0,
           quantity:   Number(i.quantity)
         }))
       })
       setSuccess(`Sale recorded! Total: Rs.${total.toFixed(2)}`)
       setItems([{ ...emptyItem }])
       setPaymentMode('cash')
+      setDiscount('')
       loadSales()
     } catch (err) {
-      setError('Error recording sale. Check stock availability.')
+      setError(err.message || 'Error recording sale.')
     } finally {
       setSubmitting(false)
     }
@@ -96,45 +101,66 @@ export default function SalesPage() {
 
       <div className="card">
         <form onSubmit={handleSubmit}>
+
+          {/* Header row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, marginBottom: 6 }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Product</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Price</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Qty</span>
+            <span></span>
+          </div>
+
           {/* Items */}
-          {items.map((item, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                {i === 0 && <label>Product</label>}
-                <select value={item.product_id} onChange={e => handleProductChange(i, e.target.value)}>
-                  <option value="">-- Select Product --</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
+          {items.map((item, i) => {
+            const p = getProduct(item.product_id)
+            return (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, marginBottom: 10, alignItems: 'center' }}>
+                <select
+                  value={item.product_id}
+                  onChange={e => handleProductChange(i, e.target.value)}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem' }}
+                >
+                  <option value="">-- Select --</option>
+                  {products.map(prod => (
+                    <option key={prod.id} value={prod.id}>{prod.name} ({prod.unit})</option>
                   ))}
                 </select>
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                {i === 0 && <label>Price (Rs.)</label>}
-                <input
-                  type="number" min="0" step="0.01"
-                  value={item.unit_price}
-                  onChange={e => handleItemChange(i, 'unit_price', e.target.value)}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                {i === 0 && <label>Qty</label>}
+
+                <span style={{ padding: '9px 0', fontSize: '0.9rem', color: '#333' }}>
+                  {p ? `Rs.${p.selling_price.toFixed(2)}` : '—'}
+                </span>
+
                 <input
                   type="number" min="1" step="1"
                   value={item.quantity}
-                  onChange={e => handleItemChange(i, 'quantity', e.target.value)}
+                  onChange={e => handleQtyChange(i, e.target.value)}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem' }}
                 />
-              </div>
-              <div style={{ paddingBottom: 2 }}>
+
                 {items.length > 1 && (
-                  <button type="button" className="btn btn-sm btn-danger" onClick={() => removeItem(i)}>✕</button>
+                  <button type="button" className="btn btn-sm btn-danger" onClick={() => removeItem(i)}>x</button>
                 )}
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           <button type="button" className="btn btn-secondary btn-sm" onClick={addItem} style={{ marginBottom: 20 }}>
             + Add Item
           </button>
+
+          {/* Discount on total */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}>
+              Discount on Total (Rs.)
+            </label>
+            <input
+              type="number" min="0" step="0.01"
+              value={discount}
+              onChange={e => setDiscount(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', width: 120 }}
+              placeholder="0"
+            />
+          </div>
 
           {/* Payment mode */}
           <div className="form-group">
@@ -155,11 +181,25 @@ export default function SalesPage() {
             </div>
           </div>
 
-          {/* Total + Submit */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1a1a2e' }}>
-              Total: Rs.{total.toFixed(2)}
-            </span>
+          {/* Totals */}
+          <div style={{ background: '#f9f9f9', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: '#777', fontSize: '0.9rem' }}>
+              <span>Subtotal</span>
+              <span>Rs.{subtotal.toFixed(2)}</span>
+            </div>
+            {discountAmt > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: '#e74c3c', fontSize: '0.9rem' }}>
+                <span>Discount</span>
+                <span>- Rs.{discountAmt.toFixed(2)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', color: '#1a1a2e', borderTop: '1px solid #eee', paddingTop: 8, marginTop: 4 }}>
+              <span>Total</span>
+              <span>Rs.{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="btn btn-success" disabled={submitting} style={{ padding: '10px 28px', fontSize: '1rem' }}>
               {submitting ? 'Recording...' : 'Record Sale'}
             </button>
@@ -189,7 +229,7 @@ export default function SalesPage() {
                 <td>{sale.id}</td>
                 <td style={{ fontSize: '0.8rem', color: '#777' }}>{sale.created_at}</td>
                 <td style={{ fontSize: '0.85rem' }}>
-                  {sale.items?.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+                  {sale.items?.map(i => `${i.product_name} x${i.quantity}`).join(', ')}
                 </td>
                 <td>
                   <span className={`badge ${sale.payment_mode === 'cash' ? 'badge-blue' : 'badge-orange'}`}>
