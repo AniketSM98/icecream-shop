@@ -152,7 +152,7 @@ export default function ProductsPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.unit})</option>)}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, overflow: 'hidden' }}>
                 <div className="form-group">
                   <label>Cost Price (Rs.)</label>
                   <input type="number" min="0" step="0.01" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
