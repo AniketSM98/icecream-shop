@@ -118,11 +118,11 @@ export default function ProductsPage() {
                 <td>{p.name}</td>
                 <td>{p.category_name}</td>
                 <td>{p.unit}</td>
-                <td>₹{p.actual_cost?.toFixed(2)}</td>
-                <td>₹{p.selling_price?.toFixed(2)}</td>
+                <td>Rs.{p.actual_cost?.toFixed(2)}</td>
+                <td>Rs.{p.selling_price?.toFixed(2)}</td>
                 <td>
                   <span className={`badge ${p.profit >= 0 ? 'badge-green' : 'badge-red'}`}>
-                    ₹{p.profit?.toFixed(2)} ({p.profit_percent?.toFixed(1)}%)
+                    Rs.{p.profit?.toFixed(2)} ({p.profit_percent?.toFixed(1)}%)
                   </span>
                 </td>
                 <td style={{ display: 'flex', gap: 8 }}>
@@ -154,11 +154,11 @@ export default function ProductsPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label>Cost Price (₹)</label>
+                  <label>Cost Price (Rs.)</label>
                   <input type="number" min="0" step="0.01" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label>Selling Price (₹)</label>
+                  <label>Selling Price (Rs.)</label>
                   <input type="number" min="0" step="0.01" value={form.selling_price} onChange={e => setForm({ ...form, selling_price: e.target.value })} />
                 </div>
                 <div className="form-group">
@@ -174,8 +174,8 @@ export default function ProductsPage() {
               {/* Live profit preview */}
               {previewCost > 0 && previewSell > 0 && (
                 <div className="alert" style={{ background: '#f0f4ff', borderLeft: '4px solid #2980b9', color: '#1a1a2e' }}>
-                  Actual cost: ₹{actualCost.toFixed(2)} &nbsp;|&nbsp;
-                  Profit: ₹{profit.toFixed(2)} ({profitPct}%)
+                  Actual cost: Rs.{actualCost.toFixed(2)} &nbsp;|&nbsp;
+                  Profit: Rs.{profit.toFixed(2)} ({profitPct}%)
                 </div>
               )}
 

@@ -74,7 +74,7 @@ export default function SalesPage() {
           quantity:   Number(i.quantity)
         }))
       })
-      setSuccess(`Sale recorded! Total: ₹${total.toFixed(2)}`)
+      setSuccess(`Sale recorded! Total: Rs.${total.toFixed(2)}`)
       setItems([{ ...emptyItem }])
       setPaymentMode('cash')
       loadSales()
@@ -109,7 +109,7 @@ export default function SalesPage() {
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                {i === 0 && <label>Price (₹)</label>}
+                {i === 0 && <label>Price (Rs.)</label>}
                 <input
                   type="number" min="0" step="0.01"
                   value={item.unit_price}
@@ -158,7 +158,7 @@ export default function SalesPage() {
           {/* Total + Submit */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
             <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1a1a2e' }}>
-              Total: ₹{total.toFixed(2)}
+              Total: Rs.{total.toFixed(2)}
             </span>
             <button type="submit" className="btn btn-success" disabled={submitting} style={{ padding: '10px 28px', fontSize: '1rem' }}>
               {submitting ? 'Recording...' : 'Record Sale'}
@@ -196,7 +196,7 @@ export default function SalesPage() {
                     {sale.payment_mode.toUpperCase()}
                   </span>
                 </td>
-                <td><strong>₹{sale.total_amount?.toFixed(2)}</strong></td>
+                <td><strong>Rs.{sale.total_amount?.toFixed(2)}</strong></td>
               </tr>
             ))}
           </tbody>
