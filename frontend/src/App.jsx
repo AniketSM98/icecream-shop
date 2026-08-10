@@ -4,6 +4,7 @@ import SalesPage      from './pages/SalesPage.jsx'
 import InventoryPage  from './pages/InventoryPage.jsx'
 import ProductsPage   from './pages/ProductsPage.jsx'
 import CategoriesPage from './pages/CategoriesPage.jsx'
+import ReportsPage    from './pages/ReportsPage.jsx'
 import './App.css'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <NavLink to="/inventory"      >Inventory</NavLink>
           <NavLink to="/products"       >Products</NavLink>
           <NavLink to="/categories"     >Categories</NavLink>
+          <NavLink to="/reports"        >Reports</NavLink>
         </div>
       </nav>
 
@@ -27,6 +29,7 @@ export default function App() {
           <Route path="/inventory"  element={<InventoryPage />}  />
           <Route path="/products"   element={<ProductsPage />}   />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/reports"    element={<ReportsPage />}    />
         </Routes>
       </main>
     </div>
