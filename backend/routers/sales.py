@@ -41,24 +41,31 @@ def create_sale(data: SaleCreate):
 
     # ── Step 1: Validate all products and check stock ─────────────────
     for item in data.items:
-        # Check product exists
-        cursor.execute("SELECT id, name FROM products WHERE id = ?", (item.product_id,))
+        # Check product exists and fetch category name
+        cursor.execute("""
+            SELECT p.id, p.name, c.name AS category_name
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            WHERE p.id = ?
+        """, (item.product_id,))
         product = cursor.fetchone()
         if not product:
             conn.close()
-            raise HTTPException(status_code=404, detail=f"Product not found")
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        product_label = f"{product['category_name']} - {product['name']}"
 
         # Check sufficient stock
         cursor.execute("SELECT quantity FROM inventory WHERE product_id = ?", (item.product_id,))
         inv = cursor.fetchone()
         if not inv:
             conn.close()
-            raise HTTPException(status_code=404, detail=f"Inventory not found for '{product['name']}'")
+            raise HTTPException(status_code=404, detail=f"Inventory not found for '{product_label}'")
         if inv["quantity"] < item.quantity:
             conn.close()
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient stock for '{product['name']}'. Available: {inv['quantity']}, Requested: {item.quantity}"
+                detail=f"Insufficient stock for '{product_label}'. Available: {inv['quantity']}, Requested: {item.quantity}"
             )
 
     # ── Step 2: Calculate total amount ───────────────────────────────
