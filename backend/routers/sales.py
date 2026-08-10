@@ -248,3 +248,47 @@ def get_sale(sale_id: int):
             for item in items
         ]
     }
+
+
+@router.delete("/{sale_id}")
+def delete_sale(sale_id: int):
+    """
+    Deletes a sale and restores inventory for all items in that sale.
+    Use this to correct a wrong entry.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Check sale exists
+    cursor.execute("SELECT id FROM sales WHERE id = ?", (sale_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    # Fetch sale items to restore inventory
+    cursor.execute("SELECT product_id, quantity FROM sale_items WHERE sale_id = ?", (sale_id,))
+    items = cursor.fetchall()
+
+    try:
+        # Restore inventory for each item
+        for item in items:
+            cursor.execute("""
+                UPDATE inventory
+                SET quantity     = quantity + ?,
+                    last_updated = CURRENT_TIMESTAMP
+                WHERE product_id = ?
+            """, (item["quantity"], item["product_id"]))
+
+        # Delete sale items first (foreign key)
+        cursor.execute("DELETE FROM sale_items WHERE sale_id = ?", (sale_id,))
+
+        # Delete sale
+        cursor.execute("DELETE FROM sales WHERE id = ?", (sale_id,))
+        conn.commit()
+
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Error deleting sale: {str(e)}")
+
+    conn.close()
+    return {"message": f"Sale {sale_id} deleted and inventory restored."}

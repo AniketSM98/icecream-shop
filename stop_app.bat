@@ -4,6 +4,12 @@ title Stopping Ice Cream Shop
 echo Stopping Ice Cream Shop...
 echo.
 
+:: Close the Chrome window opened by start_app.bat
+:: This closes only the window with localhost:5173 in the title
+for /f "tokens=2" %%a in ('tasklist /fi "IMAGENAME eq chrome.exe" /v /fo list ^| findstr /i "localhost:5173"') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+
 :: Kill uvicorn (backend)
 taskkill /f /im python.exe >nul 2>&1
 

@@ -31,3 +31,4 @@ export const updateInventory = (id, data) => request(`${BASE_URL}/inventory/${id
 // ── Sales ─────────────────────────────────────────────────────
 export const getSales        = () => request(`${BASE_URL}/sales`)
 export const createSale      = (data) => request(`${BASE_URL}/sales`, { method: "POST", ...json(data) })
+export const deleteSale      = (id) => request(`${BASE_URL}/sales/${id}`, { method: "DELETE" })

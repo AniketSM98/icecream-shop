@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getProducts, getCategories, createSale, getSales } from '../api'
+import { getProducts, getCategories, createSale, getSales, deleteSale } from '../api'
 
 const emptyItem = { category_id: '', product_id: '', quantity: 1 }
 
@@ -25,6 +25,16 @@ export default function SalesPage() {
   async function loadSales() {
     const data = await getSales()
     setSales(data.slice(0, 20))
+  }
+
+  async function handleDeleteSale(sale) {
+    if (!window.confirm(`Delete sale #${sale.id} (Rs.${sale.total_amount.toFixed(2)})? Inventory will be restored.`)) return
+    try {
+      await deleteSale(sale.id)
+      loadSales()
+    } catch (err) {
+      setError(err.message || 'Error deleting sale.')
+    }
   }
 
   function handleCategoryChange(index, category_id) {
@@ -249,11 +259,12 @@ export default function SalesPage() {
               <th>Items</th>
               <th>Payment</th>
               <th>Total</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {sales.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#999' }}>No sales yet.</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: '#999' }}>No sales yet.</td></tr>
             )}
             {sales.map(sale => (
               <tr key={sale.id}>
@@ -268,6 +279,9 @@ export default function SalesPage() {
                   </span>
                 </td>
                 <td><strong>Rs.{sale.total_amount?.toFixed(2)}</strong></td>
+                <td>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDeleteSale(sale)}>Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>

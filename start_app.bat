@@ -16,8 +16,8 @@ start "Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 :: Wait 4 seconds for frontend to start before opening browser
 timeout /t 4 /nobreak >nul
 
-:: Open browser
-start http://localhost:5173
+:: Open app in a new Chrome window (not a new tab)
+start chrome --new-window http://localhost:5173
 
 echo.
 echo App is running!
