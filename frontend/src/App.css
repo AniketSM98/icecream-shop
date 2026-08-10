@@ -151,10 +151,6 @@ tr:hover td { background: #fafafa; }
   color: #555;
 }
 
-select, input {
-  color: #333;
-}
-
 .form-group input,
 .form-group select {
   padding: 9px 12px;

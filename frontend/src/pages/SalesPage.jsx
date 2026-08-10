@@ -134,7 +134,7 @@ export default function SalesPage() {
                 <select
                   value={item.category_id}
                   onChange={e => handleCategoryChange(i, e.target.value)}
-                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem' }}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', color: '#333', background: 'white' }}
                 >
                   <option value="">-- Category --</option>
                   {categories.map(cat => (
@@ -165,7 +165,7 @@ export default function SalesPage() {
                   type="number" min="1" step="1"
                   value={item.quantity}
                   onChange={e => handleQtyChange(i, e.target.value)}
-                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem' }}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', color: '#333', background: 'white' }}
                 />
 
                 {items.length > 1 && (
