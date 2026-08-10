@@ -62,21 +62,22 @@
 
 ---
 
-## Stage 5 — React Frontend 🔄 In Progress
-**What:** Full UI for all features
-**Pages:**
-- Sales page (primary — used most by staff)
-- Inventory page
-- Products page
-- Categories page
-- Dashboard
-- Reports
+## Stage 5 — React Frontend ✅ Done
+**What:** Full UI for all backend features
+**Pages built:**
+- Sales page — category filter → product dropdown → auto price → qty → discount on total → cash/UPI
+- Inventory page — stock table with low stock highlights, update stock modal
+- Products page — table with profit display, add/edit/delete with live profit preview
+- Categories page — add/edit/delete
 
 **Tech:** React + Vite, React Router for navigation
 **Key decisions:**
-- Products selected by name via dropdown (not by ID)
-- Unit price auto-filled from product data
-- Total auto-calculated as items are added
+- Category dropdown first, then filtered product dropdown (not a single combined dropdown)
+- Unit price auto-filled from product data — not editable per item
+- Discount applied on the total amount (not per unit)
+- Error messages from backend shown directly in UI (e.g. insufficient stock)
+- Currency shown as "Rs." (not ₹ symbol) to avoid Windows PowerShell encoding issues
+- `git checkout origin/main -- <file>` used on shop laptop instead of `git pull` due to Vite setup mismatch
 
 ---
 

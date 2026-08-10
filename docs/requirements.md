@@ -19,6 +19,7 @@ A local web application for managing an ice cream shop — tracking products, in
 - Each product belongs to a category
 - Price fields: cost price, discount %, tax/GST %, selling price
 - App auto-calculates: actual cost, profit, profit %
+- Live profit preview shown while filling the add/edit form
 
 ### Inventory
 - Every product automatically gets an inventory record when created (starts at 0)
@@ -28,20 +29,22 @@ A local web application for managing an ice cream shop — tracking products, in
 
 ### Sales
 - Record a sale with one or more products
-- Select product by name (not ID)
-- Quantity and unit price per item
+- Select category first, then product filtered by that category
+- Unit price auto-filled from product data (not editable per item)
+- Discount applied on the total amount (not per unit)
 - Payment mode: Cash or UPI
-- App auto-calculates total amount
+- App auto-calculates subtotal and total after discount
 - Stock is automatically deducted from inventory on sale
-- Cannot sell more than available stock (validation)
+- Cannot sell more than available stock — error shown to staff
+- Recent sales shown below the form
 
-### Dashboard
+### Dashboard (planned)
 - Today's total sales amount
 - Number of transactions today
 - Cash vs UPI split
 - Low stock alerts count
 
-### Reports
+### Reports (planned)
 - Filter sales by date range
 - Total sales, total profit
 - Breakdown by product
