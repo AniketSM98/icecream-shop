@@ -31,20 +31,31 @@ def get_dashboard():
     # ── Today's sales summary ─────────────────────────────────────────
     cursor.execute("""
         SELECT
-            COALESCE(SUM(total_amount), 0)                                    AS total_sales,
-            COUNT(*)                                                           AS transaction_count,
-            COALESCE(SUM(CASE WHEN payment_mode = 'cash' THEN total_amount ELSE 0 END), 0) AS cash_total,
-            COALESCE(SUM(CASE WHEN payment_mode = 'upi'  THEN total_amount ELSE 0 END), 0) AS upi_total
+            COALESCE(SUM(total_amount), 0)                                                           AS total_sales,
+            COUNT(*)                                                                                  AS transaction_count,
+            COALESCE(SUM(CASE WHEN payment_mode = 'cash' THEN total_amount ELSE 0 END), 0)          AS cash_total,
+            COALESCE(SUM(CASE WHEN payment_mode = 'upi'  THEN total_amount ELSE 0 END), 0)          AS upi_total
         FROM sales
         WHERE DATE(created_at) = DATE('now', 'localtime')
     """)
     summary = cursor.fetchone()
 
-    # ── Total units sold today ────────────────────────────────────────
+    # ── Total units sold and profit today ─────────────────────────────
+    # actual_cost = cost_price - (cost_price * discount%) + (cost_price * tax%)
+    # profit per item = (unit_price - actual_cost) * quantity
     cursor.execute("""
-        SELECT COALESCE(SUM(si.quantity), 0) AS items_sold
+        SELECT
+            COALESCE(SUM(si.quantity), 0) AS items_sold,
+            COALESCE(SUM(
+                (si.unit_price - (
+                    p.cost_price
+                    - (p.cost_price * p.discount_percent / 100.0)
+                    + (p.cost_price * p.tax_percent     / 100.0)
+                )) * si.quantity
+            ), 0) AS total_profit
         FROM sale_items si
-        JOIN sales s ON si.sale_id = s.id
+        JOIN sales    s ON si.sale_id    = s.id
+        JOIN products p ON si.product_id = p.id
         WHERE DATE(s.created_at) = DATE('now', 'localtime')
     """)
     units = cursor.fetchone()
@@ -52,10 +63,17 @@ def get_dashboard():
     # ── Top 5 products sold today ─────────────────────────────────────
     cursor.execute("""
         SELECT
-            p.name        AS product_name,
-            c.name        AS category_name,
+            p.name           AS product_name,
+            c.name           AS category_name,
             SUM(si.quantity) AS total_qty,
-            SUM(si.quantity * si.unit_price) AS total_revenue
+            SUM(si.quantity * si.unit_price) AS total_revenue,
+            SUM(
+                (si.unit_price - (
+                    p.cost_price
+                    - (p.cost_price * p.discount_percent / 100.0)
+                    + (p.cost_price * p.tax_percent      / 100.0)
+                )) * si.quantity
+            ) AS total_profit
         FROM sale_items si
         JOIN sales      s  ON si.sale_id     = s.id
         JOIN products   p  ON si.product_id  = p.id
@@ -84,20 +102,28 @@ def get_dashboard():
     low_stock = cursor.fetchall()
     conn.close()
 
+    total_sales  = round(summary["total_sales"], 2)
+    total_profit = round(units["total_profit"], 2)
+    profit_margin = round((total_profit / total_sales * 100), 1) if total_sales > 0 else 0.0
+
     return {
         "summary": {
-            "total_sales":       round(summary["total_sales"], 2),
+            "total_sales":       total_sales,
             "transaction_count": summary["transaction_count"],
             "cash_total":        round(summary["cash_total"], 2),
             "upi_total":         round(summary["upi_total"], 2),
-            "items_sold":        units["items_sold"]
+            "items_sold":        units["items_sold"],
+            "total_profit":      total_profit,
+            "profit_margin":     profit_margin,
+            "avg_transaction":   round(total_sales / summary["transaction_count"], 2) if summary["transaction_count"] > 0 else 0.0
         },
         "top_products": [
             {
                 "product_name":  row["product_name"],
                 "category_name": row["category_name"],
                 "total_qty":     row["total_qty"],
-                "total_revenue": round(row["total_revenue"], 2)
+                "total_revenue": round(row["total_revenue"], 2),
+                "total_profit":  round(row["total_profit"], 2)
             }
             for row in top_products
         ],

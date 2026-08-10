@@ -10,8 +10,9 @@ export default function DashboardPage() {
   useEffect(() => { load() }, [])
 
   async function load() {
+    setLoading(true)
     try {
-      const r = await fetch(`${BASE_URL}/dashboard`)
+      const r    = await fetch(`${BASE_URL}/dashboard`)
       const json = await r.json()
       setData(json)
     } catch {
@@ -36,15 +37,29 @@ export default function DashboardPage() {
         <button className="btn btn-secondary btn-sm" onClick={load}>Refresh</button>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <KpiCard label="Total Sales"     value={`Rs.${summary.total_sales.toFixed(2)}`}  color="#2ecc71" />
-        <KpiCard label="Transactions"    value={summary.transaction_count}                color="#2980b9" />
-        <KpiCard label="Items Sold"      value={summary.items_sold}                       color="#8e44ad" />
-        <KpiCard label="Cash"            value={`Rs.${summary.cash_total.toFixed(2)}`}   color="#e67e22" sub={`${cashPct}%`} />
-        <KpiCard label="UPI"             value={`Rs.${summary.upi_total.toFixed(2)}`}    color="#1abc9c" sub={`${upiPct}%`} />
+      {/* Sales KPIs */}
+      <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: 10, marginTop: -8 }}>Sales</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, marginBottom: 8 }}>
+        <KpiCard label="Total Sales"        value={`Rs.${summary.total_sales.toFixed(2)}`}       color="#2ecc71" />
+        <KpiCard label="Transactions"       value={summary.transaction_count}                     color="#2980b9" />
+        <KpiCard label="Items Sold"         value={summary.items_sold}                            color="#8e44ad" />
+        <KpiCard label="Avg. Transaction"   value={`Rs.${summary.avg_transaction.toFixed(2)}`}   color="#16a085" />
+      </div>
+
+      {/* Profit KPIs */}
+      <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: 10, marginTop: 8 }}>Profit</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, marginBottom: 8 }}>
+        <KpiCard label="Total Profit"       value={`Rs.${summary.total_profit.toFixed(2)}`}      color="#e74c3c" />
+        <KpiCard label="Profit Margin"      value={`${summary.profit_margin}%`}                  color="#c0392b" sub="of revenue" />
+      </div>
+
+      {/* Payment KPIs */}
+      <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: 10, marginTop: 8 }}>Payments</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <KpiCard label="Cash"               value={`Rs.${summary.cash_total.toFixed(2)}`}        color="#e67e22" sub={`${cashPct}% of sales`} />
+        <KpiCard label="UPI"                value={`Rs.${summary.upi_total.toFixed(2)}`}         color="#1abc9c" sub={`${upiPct}% of sales`} />
         {low_stock_items.length > 0 && (
-          <KpiCard label="Low Stock" value={low_stock_items.length} color="#e74c3c" sub="items" />
+          <KpiCard label="Low Stock Alert"  value={low_stock_items.length}                        color="#e74c3c" sub="items need restock" />
         )}
       </div>
 
@@ -59,13 +74,14 @@ export default function DashboardPage() {
                 <tr>
                   <th>Product</th>
                   <th>Category</th>
-                  <th>Qty Sold</th>
+                  <th>Qty</th>
                   <th>Revenue</th>
+                  <th>Profit</th>
                 </tr>
               </thead>
               <tbody>
                 {top_products.length === 0 && (
-                  <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999' }}>No sales today.</td></tr>
+                  <tr><td colSpan={5} style={{ textAlign: 'center', color: '#999' }}>No sales today.</td></tr>
                 )}
                 {top_products.map((p, i) => (
                   <tr key={i}>
@@ -73,6 +89,7 @@ export default function DashboardPage() {
                     <td><span className="badge badge-blue">{p.category_name}</span></td>
                     <td><strong>{p.total_qty}</strong></td>
                     <td>Rs.{p.total_revenue.toFixed(2)}</td>
+                    <td><span className={`badge ${p.total_profit >= 0 ? 'badge-green' : 'badge-red'}`}>Rs.{p.total_profit.toFixed(2)}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -123,8 +140,8 @@ function KpiCard({ label, value, color, sub }) {
   return (
     <div style={{ background: 'white', borderRadius: 10, padding: '20px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderTop: `4px solid ${color}` }}>
       <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: 6, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#1a1a2e' }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: 4 }}>{sub}</div>}
+      <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1a1a2e' }}>{value}</div>
+      {sub && <div style={{ fontSize: '0.78rem', color: '#aaa', marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
