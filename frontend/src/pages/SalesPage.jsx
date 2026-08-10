@@ -147,7 +147,7 @@ export default function SalesPage() {
                   value={item.product_id}
                   onChange={e => handleProductChange(i, e.target.value)}
                   disabled={!item.category_id}
-                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', background: !item.category_id ? '#f5f5f5' : 'white' }}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', background: !item.category_id ? '#f5f5f5' : 'white', color: '#333' }}
                 >
                   <option value="">-- Product --</option>
                   {filteredProds.map(prod => (
