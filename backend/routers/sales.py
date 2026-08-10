@@ -46,19 +46,19 @@ def create_sale(data: SaleCreate):
         product = cursor.fetchone()
         if not product:
             conn.close()
-            raise HTTPException(status_code=404, detail=f"Product id {item.product_id} not found")
+            raise HTTPException(status_code=404, detail=f"Product not found")
 
         # Check sufficient stock
         cursor.execute("SELECT quantity FROM inventory WHERE product_id = ?", (item.product_id,))
         inv = cursor.fetchone()
         if not inv:
             conn.close()
-            raise HTTPException(status_code=404, detail=f"Inventory not found for product id {item.product_id}")
+            raise HTTPException(status_code=404, detail=f"Inventory not found for '{product['name']}'")
         if inv["quantity"] < item.quantity:
             conn.close()
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient stock for product id {item.product_id}. Available: {inv['quantity']}, Requested: {item.quantity}"
+                detail=f"Insufficient stock for '{product['name']}'. Available: {inv['quantity']}, Requested: {item.quantity}"
             )
 
     # ── Step 2: Calculate total amount ───────────────────────────────
