@@ -1,28 +1,36 @@
 import { useState, useEffect } from 'react'
-import { getProducts, createSale, getSales } from '../api'
+import { getProducts, getCategories, createSale, getSales } from '../api'
 
-const emptyItem = { product_id: '', quantity: 1 }
+const emptyItem = { category_id: '', product_id: '', quantity: 1 }
 
 export default function SalesPage() {
   const [products,    setProducts]    = useState([])
+  const [categories,  setCategories]  = useState([])
   const [items,       setItems]       = useState([{ ...emptyItem }])
   const [paymentMode, setPaymentMode] = useState('cash')
-  const [discount,    setDiscount]    = useState('')   // discount on total
+  const [discount,    setDiscount]    = useState('')
   const [sales,       setSales]       = useState([])
   const [error,       setError]       = useState('')
   const [success,     setSuccess]     = useState('')
   const [submitting,  setSubmitting]  = useState(false)
 
-  useEffect(() => { loadProducts(); loadSales() }, [])
+  useEffect(() => { loadData(); loadSales() }, [])
 
-  async function loadProducts() {
-    const data = await getProducts()
-    setProducts(data)
+  async function loadData() {
+    const [prods, cats] = await Promise.all([getProducts(), getCategories()])
+    setProducts(prods)
+    setCategories(cats)
   }
 
   async function loadSales() {
     const data = await getSales()
     setSales(data.slice(0, 20))
+  }
+
+  function handleCategoryChange(index, category_id) {
+    const updated = [...items]
+    updated[index] = { ...updated[index], category_id, product_id: '' }
+    setItems(updated)
   }
 
   function handleProductChange(index, product_id) {
@@ -49,11 +57,15 @@ export default function SalesPage() {
     return products.find(p => p.id === Number(id))
   }
 
-  const subtotal = items.reduce((sum, item) => {
+  function getProductsForCategory(category_id) {
+    if (!category_id) return []
+    return products.filter(p => p.category_id === Number(category_id))
+  }
+
+  const subtotal    = items.reduce((sum, item) => {
     const p = getProduct(item.product_id)
     return sum + (p ? p.selling_price * Number(item.quantity) : 0)
   }, 0)
-
   const discountAmt = Number(discount) || 0
   const total       = Math.max(0, subtotal - discountAmt)
 
@@ -103,7 +115,8 @@ export default function SalesPage() {
         <form onSubmit={handleSubmit}>
 
           {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, marginBottom: 6 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr 1fr auto', gap: 12, marginBottom: 6 }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Category</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Product</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Price</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>Qty</span>
@@ -112,24 +125,42 @@ export default function SalesPage() {
 
           {/* Items */}
           {items.map((item, i) => {
-            const p = getProduct(item.product_id)
+            const p             = getProduct(item.product_id)
+            const filteredProds = getProductsForCategory(item.category_id)
             return (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, marginBottom: 10, alignItems: 'center' }}>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr 1fr auto', gap: 12, marginBottom: 10, alignItems: 'center' }}>
+
+                {/* Category dropdown */}
                 <select
-                  value={item.product_id}
-                  onChange={e => handleProductChange(i, e.target.value)}
+                  value={item.category_id}
+                  onChange={e => handleCategoryChange(i, e.target.value)}
                   style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem' }}
                 >
-                  <option value="">-- Select --</option>
-                  {products.map(prod => (
-                    <option key={prod.id} value={prod.id}>{prod.name} ({prod.unit})</option>
+                  <option value="">-- Category --</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
 
+                {/* Product dropdown — filtered by category */}
+                <select
+                  value={item.product_id}
+                  onChange={e => handleProductChange(i, e.target.value)}
+                  disabled={!item.category_id}
+                  style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', background: !item.category_id ? '#f5f5f5' : 'white' }}
+                >
+                  <option value="">-- Product --</option>
+                  {filteredProds.map(prod => (
+                    <option key={prod.id} value={prod.id}>{prod.name}</option>
+                  ))}
+                </select>
+
+                {/* Auto price */}
                 <span style={{ padding: '9px 0', fontSize: '0.9rem', color: '#333' }}>
                   {p ? `Rs.${p.selling_price.toFixed(2)}` : '—'}
                 </span>
 
+                {/* Quantity */}
                 <input
                   type="number" min="1" step="1"
                   value={item.quantity}
