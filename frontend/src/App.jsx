@@ -1,4 +1,5 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
+import DashboardPage  from './pages/DashboardPage.jsx'
 import SalesPage      from './pages/SalesPage.jsx'
 import InventoryPage  from './pages/InventoryPage.jsx'
 import ProductsPage   from './pages/ProductsPage.jsx'
@@ -11,7 +12,8 @@ export default function App() {
       <nav className="navbar">
         <span className="nav-brand">Ice Cream Shop</span>
         <div className="nav-links">
-          <NavLink to="/"            end>Sales</NavLink>
+          <NavLink to="/"            end>Dashboard</NavLink>
+          <NavLink to="/sales"          >Sales</NavLink>
           <NavLink to="/inventory"      >Inventory</NavLink>
           <NavLink to="/products"       >Products</NavLink>
           <NavLink to="/categories"     >Categories</NavLink>
@@ -20,7 +22,8 @@ export default function App() {
 
       <main className="main-content">
         <Routes>
-          <Route path="/"           element={<SalesPage />}      />
+          <Route path="/"           element={<DashboardPage />}  />
+          <Route path="/sales"      element={<SalesPage />}      />
           <Route path="/inventory"  element={<InventoryPage />}  />
           <Route path="/products"   element={<ProductsPage />}   />
           <Route path="/categories" element={<CategoriesPage />} />

@@ -52,10 +52,12 @@ from routers import categories
 from routers import products
 from routers import inventory
 from routers import sales
+from routers import dashboard
 # from routers import reports    # uncomment in Phase 7
 
 app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
 app.include_router(products.router,   prefix="/api/products",   tags=["Products"])
 app.include_router(inventory.router,  prefix="/api/inventory",  tags=["Inventory"])
 app.include_router(sales.router,      prefix="/api/sales",      tags=["Sales"])
+app.include_router(dashboard.router,  prefix="/api/dashboard",  tags=["Dashboard"])
 # app.include_router(reports.router,    prefix="/api/reports",    tags=["Reports"])
