@@ -1,20 +1,106 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getProducts, getCategories, createSale, getSales, deleteSale } from '../api'
 
 const emptyItem = { category_id: '', product_id: '', quantity: 1 }
 
-export default function SalesPage() {
-  const [products,    setProducts]    = useState([])
-  const [categories,  setCategories]  = useState([])
-  const [items,       setItems]       = useState([{ ...emptyItem }])
-  const [paymentMode, setPaymentMode] = useState('cash')
-  const [discount,    setDiscount]    = useState('')
-  const [sales,       setSales]       = useState([])
-  const [error,       setError]       = useState('')
-  const [success,     setSuccess]     = useState('')
-  const [submitting,  setSubmitting]  = useState(false)
+// ── Fuzzy match: find closest product to spoken name ─────────────────────────
+function fuzzyMatchProduct(spokenName, products) {
+  const spoken = spokenName.toLowerCase().trim()
+  let bestScore = 0
+  let bestProduct = null
 
-  useEffect(() => { loadData(); loadSales() }, [])
+  for (const p of products) {
+    const productName = p.name.toLowerCase()
+    const spokenWords = spoken.split(' ').filter(Boolean)
+
+    // Count how many spoken words appear in the product name
+    const matchCount = spokenWords.filter(w => productName.includes(w)).length
+    const score = matchCount / spokenWords.length
+
+    // Also check reverse — product words in spoken text
+    const productWords = productName.split(' ').filter(Boolean)
+    const reverseMatch = productWords.filter(w => spoken.includes(w)).length
+    const reverseScore = reverseMatch / productWords.length
+
+    const finalScore = Math.max(score, reverseScore)
+    if (finalScore > bestScore) {
+      bestScore = finalScore
+      bestProduct = p
+    }
+  }
+
+  // Only return a match if confidence is reasonable
+  return bestScore >= 0.4 ? bestProduct : null
+}
+
+// ── Parse spoken text into items + payment mode ───────────────────────────────
+function parseSpeech(text, products) {
+  const lower = text.toLowerCase().trim()
+
+  // Detect payment mode
+  let paymentMode = 'cash'
+  if (lower.includes('upi') || lower.includes('gpay') || lower.includes('online') || lower.includes('phone pay') || lower.includes('phonepay')) {
+    paymentMode = 'upi'
+  }
+
+  // Remove payment words and split by comma/and
+  const cleaned = lower
+    .replace(/\b(cash|upi|gpay|online|phone\s*pay)\b/g, '')
+    .replace(/\band\b/g, ',')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  const parsedItems = []
+
+  for (const chunk of cleaned) {
+    // Extract leading number as quantity
+    const qtyMatch = chunk.match(/^(\d+(\.\d+)?)\s+(.+)/)
+    let qty = 1
+    let namePart = chunk
+
+    if (qtyMatch) {
+      qty = parseFloat(qtyMatch[1])
+      namePart = qtyMatch[3].trim()
+    }
+
+    if (!namePart) continue
+
+    const matched = fuzzyMatchProduct(namePart, products)
+    if (matched) {
+      parsedItems.push({ product: matched, quantity: qty })
+    }
+  }
+
+  return { parsedItems, paymentMode }
+}
+
+export default function SalesPage() {
+  const [products,      setProducts]      = useState([])
+  const [categories,    setCategories]    = useState([])
+  const [items,         setItems]         = useState([{ ...emptyItem }])
+  const [paymentMode,   setPaymentMode]   = useState('cash')
+  const [discount,      setDiscount]      = useState('')
+  const [sales,         setSales]         = useState([])
+  const [error,         setError]         = useState('')
+  const [success,       setSuccess]       = useState('')
+  const [submitting,    setSubmitting]    = useState(false)
+
+  // Voice state
+  const [listening,     setListening]     = useState(false)
+  const [transcript,    setTranscript]    = useState('')
+  const [voiceError,    setVoiceError]    = useState('')
+  const [voiceSupported, setVoiceSupported] = useState(true)
+  const recognitionRef  = useRef(null)
+
+  useEffect(() => {
+    loadData()
+    loadSales()
+    // Check browser support
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setVoiceSupported(false)
+    }
+  }, [])
 
   async function loadData() {
     const [prods, cats] = await Promise.all([getProducts(), getCategories()])
@@ -27,6 +113,75 @@ export default function SalesPage() {
     setSales(data.slice(0, 20))
   }
 
+  // ── Voice handlers ──────────────────────────────────────────────────────────
+  function startListening() {
+    setVoiceError('')
+    setTranscript('')
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-IN'
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    recognition.onresult = (e) => {
+      const text = Array.from(e.results).map(r => r[0].transcript).join('')
+      setTranscript(text)
+    }
+
+    recognition.onerror = (e) => {
+      setVoiceError(`Mic error: ${e.error}. Make sure mic is allowed in browser.`)
+      setListening(false)
+    }
+
+    recognition.onend = () => {
+      setListening(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setListening(true)
+  }
+
+  function stopListening() {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setListening(false)
+  }
+
+  function applyTranscript() {
+    if (!transcript.trim()) {
+      setVoiceError('Nothing was heard. Try again.')
+      return
+    }
+
+    const { parsedItems, paymentMode: detectedPayment } = parseSpeech(transcript, products)
+
+    if (parsedItems.length === 0) {
+      setVoiceError(`Could not match any products from: "${transcript}". Try again or fill manually.`)
+      return
+    }
+
+    // Fill the form
+    const newItems = parsedItems.map(pi => ({
+      category_id: String(pi.product.category_id),
+      product_id:  String(pi.product.id),
+      quantity:    pi.quantity
+    }))
+
+    setItems(newItems)
+    setPaymentMode(detectedPayment)
+    setTranscript('')
+    setVoiceError('')
+  }
+
+  function clearTranscript() {
+    setTranscript('')
+    setVoiceError('')
+  }
+
+  // ── Form handlers ───────────────────────────────────────────────────────────
   async function handleDeleteSale(sale) {
     if (!window.confirm(`Delete sale #${sale.id} (Rs.${sale.total_amount.toFixed(2)})? Inventory will be restored.`)) return
     try {
@@ -121,6 +276,60 @@ export default function SalesPage() {
       {error   && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
+      {/* ── Voice Command Box ── */}
+      {voiceSupported && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid #8e44ad' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#555' }}>Voice Command</span>
+
+            {!listening ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={startListening}
+                style={{ background: '#8e44ad' }}
+              >
+                Start Listening
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={stopListening}
+                style={{ animation: 'pulse 1s infinite' }}
+              >
+                Listening... (Click to Stop)
+              </button>
+            )}
+
+            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>
+              Say: "2 chocolate cone, 1 mango cup, cash"
+            </span>
+          </div>
+
+          {/* Transcript display */}
+          {transcript && (
+            <div style={{ marginTop: 12, padding: '10px 14px', background: '#f5f0ff', borderRadius: 8, border: '1px solid #d9c3f0' }}>
+              <div style={{ fontSize: '0.8rem', color: '#8e44ad', fontWeight: 600, marginBottom: 4 }}>Heard:</div>
+              <div style={{ fontSize: '1rem', color: '#333' }}>"{transcript}"</div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button type="button" className="btn btn-success btn-sm" onClick={applyTranscript}>
+                  Fill Form
+                </button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={clearTranscript}>
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {voiceError && (
+            <div className="alert alert-error" style={{ marginTop: 10, marginBottom: 0 }}>{voiceError}</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Sale Form ── */}
       <div className="card">
         <form onSubmit={handleSubmit}>
 
@@ -139,8 +348,6 @@ export default function SalesPage() {
             const filteredProds = getProductsForCategory(item.category_id)
             return (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr 1fr auto', gap: 12, marginBottom: 10, alignItems: 'center' }}>
-
-                {/* Category dropdown */}
                 <select
                   value={item.category_id}
                   onChange={e => handleCategoryChange(i, e.target.value)}
@@ -152,7 +359,6 @@ export default function SalesPage() {
                   ))}
                 </select>
 
-                {/* Product dropdown — filtered by category */}
                 <select
                   value={item.product_id}
                   onChange={e => handleProductChange(i, e.target.value)}
@@ -165,12 +371,10 @@ export default function SalesPage() {
                   ))}
                 </select>
 
-                {/* Auto price */}
                 <span style={{ padding: '9px 0', fontSize: '0.9rem', color: '#333' }}>
                   {p ? `Rs.${p.selling_price.toFixed(2)}` : '—'}
                 </span>
 
-                {/* Quantity */}
                 <input
                   type="number" min="1" step="1"
                   value={item.quantity}
@@ -189,7 +393,7 @@ export default function SalesPage() {
             + Add Item
           </button>
 
-          {/* Discount on total */}
+          {/* Discount */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}>
               Discount on Total (Rs.)
@@ -210,9 +414,7 @@ export default function SalesPage() {
               {['cash', 'upi'].map(mode => (
                 <label key={mode} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.95rem' }}>
                   <input
-                    type="radio"
-                    name="payment"
-                    value={mode}
+                    type="radio" name="payment" value={mode}
                     checked={paymentMode === mode}
                     onChange={() => setPaymentMode(mode)}
                   />
@@ -225,18 +427,15 @@ export default function SalesPage() {
           {/* Totals */}
           <div style={{ background: '#f9f9f9', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: '#777', fontSize: '0.9rem' }}>
-              <span>Subtotal</span>
-              <span>Rs.{subtotal.toFixed(2)}</span>
+              <span>Subtotal</span><span>Rs.{subtotal.toFixed(2)}</span>
             </div>
             {discountAmt > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: '#e74c3c', fontSize: '0.9rem' }}>
-                <span>Discount</span>
-                <span>- Rs.{discountAmt.toFixed(2)}</span>
+                <span>Discount</span><span>- Rs.{discountAmt.toFixed(2)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', color: '#1a1a2e', borderTop: '1px solid #eee', paddingTop: 8, marginTop: 4 }}>
-              <span>Total</span>
-              <span>Rs.{total.toFixed(2)}</span>
+              <span>Total</span><span>Rs.{total.toFixed(2)}</span>
             </div>
           </div>
 
@@ -254,12 +453,7 @@ export default function SalesPage() {
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Time</th>
-              <th>Items</th>
-              <th>Payment</th>
-              <th>Total</th>
-              <th>Action</th>
+              <th>#</th><th>Time</th><th>Items</th><th>Payment</th><th>Total</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
