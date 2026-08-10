@@ -49,11 +49,11 @@ export default function ReportsPage() {
       <div className="card" style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label>From</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ color: '#333' }} />
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ color: '#333', background: 'white' }} />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label>To</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ color: '#333' }} />
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ color: '#333', background: 'white' }} />
         </div>
         {/* Quick range shortcuts */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
