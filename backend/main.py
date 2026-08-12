@@ -55,6 +55,7 @@ from routers import sales
 from routers import dashboard
 from routers import reports
 from routers import preorders
+from routers import credit
 # from routers import reports    # uncomment in Phase 7
 
 app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
@@ -64,3 +65,4 @@ app.include_router(sales.router,      prefix="/api/sales",      tags=["Sales"])
 app.include_router(dashboard.router,  prefix="/api/dashboard",  tags=["Dashboard"])
 app.include_router(reports.router,    prefix="/api/reports",    tags=["Reports"])
 app.include_router(preorders.router,  prefix="/api/preorders",  tags=["Pre-orders"])
+app.include_router(credit.router,     prefix="/api/credit",     tags=["Credit"])

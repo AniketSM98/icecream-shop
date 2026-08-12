@@ -112,6 +112,38 @@ def create_tables():
         )
     """)
 
+    # ── Credit Customers Table ───────────────────────────────────────
+    # Customers who take products and pay later (udhaar)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS credit_customers (
+            id         INTEGER   PRIMARY KEY AUTOINCREMENT,
+            name       TEXT      NOT NULL,
+            phone      TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Credit Payments Table ────────────────────────────────────────
+    # Records payments made by credit customers (partial or full)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS credit_payments (
+            id           INTEGER   PRIMARY KEY AUTOINCREMENT,
+            customer_id  INTEGER   NOT NULL,
+            amount_paid  REAL      NOT NULL,
+            payment_mode TEXT      DEFAULT 'cash',
+            note         TEXT,
+            created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (customer_id) REFERENCES credit_customers(id)
+        )
+    """)
+
+    # ── Add credit columns to sales table if not already present ─────
+    existing_cols = [row[1] for row in cursor.execute("PRAGMA table_info(sales)").fetchall()]
+    if "is_credit" not in existing_cols:
+        cursor.execute("ALTER TABLE sales ADD COLUMN is_credit INTEGER DEFAULT 0")
+    if "customer_id" not in existing_cols:
+        cursor.execute("ALTER TABLE sales ADD COLUMN customer_id INTEGER")
+
     # ── Pre-orders Table ─────────────────────────────────────────────
     # Tracks customer demands — out of stock items, new products, bulk orders
     # product_name is free text — product may not exist in the system yet

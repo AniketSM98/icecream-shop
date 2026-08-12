@@ -6,6 +6,7 @@ import ProductsPage   from './pages/ProductsPage.jsx'
 import CategoriesPage from './pages/CategoriesPage.jsx'
 import ReportsPage    from './pages/ReportsPage.jsx'
 import PreordersPage  from './pages/PreordersPage.jsx'
+import CreditPage     from './pages/CreditPage.jsx'
 import './App.css'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <NavLink to="/categories"     >Categories</NavLink>
           <NavLink to="/reports"        >Reports</NavLink>
           <NavLink to="/preorders"      >Pre-orders</NavLink>
+          <NavLink to="/credit"         >Credit</NavLink>
         </div>
       </nav>
 
@@ -33,6 +35,7 @@ export default function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/reports"    element={<ReportsPage />}    />
           <Route path="/preorders"  element={<PreordersPage />}  />
+          <Route path="/credit"     element={<CreditPage />}     />
         </Routes>
       </main>
     </div>

@@ -68,18 +68,35 @@ def create_sale(data: SaleCreate):
                 detail=f"Insufficient stock for '{product_label}'. Available: {inv['quantity']}, Requested: {item.quantity}"
             )
 
-    # ── Step 2: Calculate total amount ───────────────────────────────
+    # ── Step 2: Handle credit customer ───────────────────────────────
+    customer_id = None
+    is_credit   = 0
+    if data.payment_mode == "credit":
+        if not data.customer_name or not data.customer_name.strip():
+            conn.close()
+            raise HTTPException(status_code=400, detail="Customer name is required for credit sales.")
+        # Look up by name (case-insensitive), create if not exists
+        cursor.execute("SELECT id FROM credit_customers WHERE LOWER(name) = LOWER(?)", (data.customer_name.strip(),))
+        existing = cursor.fetchone()
+        if existing:
+            customer_id = existing["id"]
+        else:
+            cursor.execute("INSERT INTO credit_customers (name) VALUES (?)", (data.customer_name.strip(),))
+            customer_id = cursor.lastrowid
+        is_credit = 1
+
+    # ── Step 3: Calculate total amount ───────────────────────────────
     total_amount = round(sum(item.quantity * item.unit_price for item in data.items), 2)
 
     try:
-        # ── Step 3: Insert sale record ────────────────────────────────
+        # ── Step 4: Insert sale record ────────────────────────────────
         cursor.execute("""
-            INSERT INTO sales (total_amount, payment_mode)
-            VALUES (?, ?)
-        """, (total_amount, data.payment_mode))
+            INSERT INTO sales (total_amount, payment_mode, is_credit, customer_id)
+            VALUES (?, ?, ?, ?)
+        """, (total_amount, data.payment_mode, is_credit, customer_id))
         sale_id = cursor.lastrowid
 
-        # ── Step 4 & 5: Insert sale items and deduct inventory ────────
+        # ── Step 5 & 6: Insert sale items and deduct inventory ────────
         sale_items_response = []
         for item in data.items:
             # Insert sale item
@@ -135,6 +152,8 @@ def create_sale(data: SaleCreate):
         "created_at":   sale["created_at"],
         "total_amount": total_amount,
         "payment_mode": data.payment_mode,
+        "is_credit":    is_credit,
+        "customer_id":  customer_id,
         "items":        sale_items_response
     }
 

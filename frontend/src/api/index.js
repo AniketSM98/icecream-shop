@@ -33,6 +33,12 @@ export const getSales        = () => request(`${BASE_URL}/sales`)
 export const createSale      = (data) => request(`${BASE_URL}/sales`, { method: "POST", ...json(data) })
 export const deleteSale      = (id) => request(`${BASE_URL}/sales/${id}`, { method: "DELETE" })
 
+// ── Credit (Udhaar) ───────────────────────────────────────────
+export const getCreditCustomers   = () => request(`${BASE_URL}/credit/customers`)
+export const createCreditCustomer = (data) => request(`${BASE_URL}/credit/customers`, { method: "POST", ...json(data) })
+export const getCreditCustomer    = (id) => request(`${BASE_URL}/credit/customers/${id}`)
+export const recordPayment        = (id, data) => request(`${BASE_URL}/credit/customers/${id}/pay`, { method: "POST", ...json(data) })
+
 // ── Pre-orders ────────────────────────────────────────────────
 export const getPreorders        = () => request(`${BASE_URL}/preorders`)
 export const getPendingPreorders = () => request(`${BASE_URL}/preorders/pending`)

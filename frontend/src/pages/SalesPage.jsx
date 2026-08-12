@@ -131,6 +131,7 @@ export default function SalesPage() {
   const [categories,    setCategories]    = useState([])
   const [items,         setItems]         = useState([{ ...emptyItem }])
   const [paymentMode,   setPaymentMode]   = useState('cash')
+  const [customerName,  setCustomerName]  = useState('')
   const [discount,      setDiscount]      = useState('')
   const [sales,         setSales]         = useState([])
   const [error,         setError]         = useState('')
@@ -318,19 +319,26 @@ export default function SalesPage() {
       return
     }
 
+    if (paymentMode === 'credit' && !customerName.trim()) {
+      setError('Customer name is required for credit sales.')
+      return
+    }
+
     setSubmitting(true)
     try {
       await createSale({
-        payment_mode: paymentMode,
+        payment_mode:  paymentMode,
+        customer_name: paymentMode === 'credit' ? customerName.trim() : undefined,
         items: validItems.map(i => ({
           product_id: Number(i.product_id),
           unit_price: getProduct(i.product_id)?.selling_price || 0,
           quantity:   Number(i.quantity)
         }))
       })
-      setSuccess(`Sale recorded! Total: Rs.${total.toFixed(2)}`)
+      setSuccess(`Sale recorded! Total: Rs.${total.toFixed(2)}${paymentMode === 'credit' ? ` (Credit: ${customerName})` : ''}`)
       setItems([{ ...emptyItem }])
       setPaymentMode('cash')
+      setCustomerName('')
       setDiscount('')
       loadSales()
     } catch (err) {
@@ -483,19 +491,32 @@ export default function SalesPage() {
           {/* Payment mode */}
           <div className="form-group">
             <label>Payment Mode</label>
-            <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-              {['cash', 'upi'].map(mode => (
+            <div style={{ display: 'flex', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
+              {['cash', 'upi', 'credit'].map(mode => (
                 <label key={mode} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.95rem' }}>
                   <input
                     type="radio" name="payment" value={mode}
                     checked={paymentMode === mode}
-                    onChange={() => setPaymentMode(mode)}
+                    onChange={() => { setPaymentMode(mode); setCustomerName('') }}
                   />
-                  {mode.toUpperCase()}
+                  {mode === 'credit' ? 'CREDIT (Udhaar)' : mode.toUpperCase()}
                 </label>
               ))}
             </div>
           </div>
+
+          {/* Customer name — shown only for credit */}
+          {paymentMode === 'credit' && (
+            <div className="form-group">
+              <label>Customer Name <span style={{ color: '#e74c3c' }}>*</span></label>
+              <input
+                value={customerName}
+                onChange={e => setCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+                style={{ color: '#333', background: 'white' }}
+              />
+            </div>
+          )}
 
           {/* Totals */}
           <div style={{ background: '#f9f9f9', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
@@ -541,7 +562,7 @@ export default function SalesPage() {
                   {sale.items?.map(i => `${i.product_name} x${i.quantity}`).join(', ')}
                 </td>
                 <td>
-                  <span className={`badge ${sale.payment_mode === 'cash' ? 'badge-blue' : 'badge-orange'}`}>
+                  <span className={`badge ${sale.payment_mode === 'cash' ? 'badge-blue' : sale.payment_mode === 'upi' ? 'badge-orange' : 'badge-red'}`}>
                     {sale.payment_mode.toUpperCase()}
                   </span>
                 </td>

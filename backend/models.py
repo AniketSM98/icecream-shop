@@ -122,8 +122,9 @@ class SaleCreate(BaseModel):
     Data required to record a complete sale.
     A sale must have at least one item.
     """
-    payment_mode: str                   # "cash" or "upi"
-    items:        list[SaleItemCreate]  # list of products sold in this transaction
+    payment_mode:  str                   # "cash", "upi", or "credit"
+    items:         list[SaleItemCreate]  # list of products sold in this transaction
+    customer_name: Optional[str] = None  # required when payment_mode is "credit"
 
 
 class SaleItemResponse(BaseModel):
@@ -143,7 +144,43 @@ class SaleResponse(BaseModel):
     created_at:   str
     total_amount: float
     payment_mode: str
+    is_credit:    Optional[int]  = 0
+    customer_id:  Optional[int]  = None
     items:        Optional[list[SaleItemResponse]] = None
+
+
+# ══════════════════════════════════════════════════════════════
+# CREDIT MODELS
+# ══════════════════════════════════════════════════════════════
+
+class CreditCustomerCreate(BaseModel):
+    name:  str
+    phone: Optional[str] = None
+
+
+class CreditCustomerResponse(BaseModel):
+    id:            int
+    name:          str
+    phone:         Optional[str]   = None
+    total_credit:  float           # total amount taken on credit
+    total_paid:    float           # total amount paid back
+    balance:       float           # outstanding balance
+    created_at:    str
+
+
+class CreditPaymentCreate(BaseModel):
+    amount_paid:   float
+    payment_mode:  str = 'cash'    # "cash" or "upi"
+    note:          Optional[str] = None
+
+
+class CreditPaymentResponse(BaseModel):
+    id:           int
+    customer_id:  int
+    amount_paid:  float
+    payment_mode: str
+    note:         Optional[str] = None
+    created_at:   str
 
 
 # ══════════════════════════════════════════════════════════════
