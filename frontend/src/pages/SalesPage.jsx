@@ -33,39 +33,65 @@ function fuzzyMatchProduct(spokenName, products) {
   return bestScore >= 0.4 ? bestProduct : null
 }
 
+// ── Convert spoken word numbers to digits ─────────────────────────────────────
+const WORD_NUM = {
+  'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,
+  'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
+  'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,
+  'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20
+}
+
+function normalizeNumbers(text) {
+  return text.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/g,
+    m => WORD_NUM[m])
+}
+
 // ── Parse spoken text into items + payment mode ───────────────────────────────
 function parseSpeech(text, products) {
-  const lower = text.toLowerCase().trim()
+  let lower = text.toLowerCase().trim()
 
   // Detect payment mode
   let paymentMode = 'cash'
-  if (lower.includes('upi') || lower.includes('gpay') || lower.includes('online') || lower.includes('phone pay') || lower.includes('phonepay')) {
+  if (lower.includes('upi') || lower.includes('gpay') || lower.includes('online') ||
+      lower.includes('phone pay') || lower.includes('phonepay')) {
     paymentMode = 'upi'
   }
 
-  // Remove payment words and split by comma/and
-  const cleaned = lower
-    .replace(/\b(cash|upi|gpay|online|phone\s*pay)\b/g, '')
-    .replace(/\band\b/g, ',')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
+  // Convert word numbers to digits, remove payment words
+  lower = normalizeNumbers(lower)
+  lower = lower.replace(/\b(cash|upi|gpay|online|phone\s*pay)\b/g, '').trim()
+
+  // Split into chunks
+  let chunks = []
+  if (lower.includes(',')) {
+    // Comma separated: "2 chocolate cone, 1 mango cup"
+    chunks = lower.split(',').map(s => s.trim()).filter(Boolean)
+  } else {
+    // No commas: split at whitespace before a standalone digit
+    // "2 chocolate cone 1 mango cup" → ["2 chocolate cone", "1 mango cup"]
+    chunks = lower.split(/\s+(?=\d+\s+\S)/).map(s => s.trim()).filter(Boolean)
+    if (chunks.length === 0) chunks = [lower]
+  }
 
   const parsedItems = []
+  for (const chunk of chunks) {
+    // Try number at start: "2 chocolate cone"
+    const qtyStart = chunk.match(/^(\d+)\s+(.+)/)
+    // Try number at end: "chocolate cone 2"
+    const qtyEnd   = chunk.match(/^(.+?)\s+(\d+)$/)
 
-  for (const chunk of cleaned) {
-    // Extract leading number as quantity
-    const qtyMatch = chunk.match(/^(\d+(\.\d+)?)\s+(.+)/)
     let qty = 1
-    let namePart = chunk
+    let namePart = chunk.trim()
 
-    if (qtyMatch) {
-      qty = parseFloat(qtyMatch[1])
-      namePart = qtyMatch[3].trim()
+    if (qtyStart) {
+      qty      = parseInt(qtyStart[1], 10)
+      namePart = qtyStart[2].trim()
+    } else if (qtyEnd) {
+      namePart = qtyEnd[1].trim()
+      qty      = parseInt(qtyEnd[2], 10)
     }
 
     if (!namePart) continue
-
     const matched = fuzzyMatchProduct(namePart, products)
     if (matched) {
       parsedItems.push({ product: matched, quantity: qty })
@@ -162,6 +188,10 @@ export default function SalesPage() {
       setVoiceError(`Could not match any products from: "${transcript}". Try again or fill manually.`)
       return
     }
+
+    // Show what was parsed for verification
+    const summary = parsedItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
+    console.log('Voice parsed:', summary, '| Payment:', detectedPayment)
 
     // Fill the form
     const newItems = parsedItems.map(pi => ({
