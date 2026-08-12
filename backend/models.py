@@ -144,3 +144,47 @@ class SaleResponse(BaseModel):
     total_amount: float
     payment_mode: str
     items:        Optional[list[SaleItemResponse]] = None
+
+
+# ══════════════════════════════════════════════════════════════
+# PRE-ORDER MODELS
+# ══════════════════════════════════════════════════════════════
+
+class PreorderCreate(BaseModel):
+    """Data required when creating a pre-order. Only product_name is mandatory."""
+    product_name:    str
+    customer_name:   Optional[str]   = None
+    customer_phone:  Optional[str]   = None
+    category_name:   Optional[str]   = None
+    quantity:        Optional[float] = None
+    notes:           Optional[str]   = None
+    advance_payment: Optional[float] = 0.0
+    delivery_date:   Optional[str]   = None  # YYYY-MM-DD
+
+
+class PreorderUpdate(BaseModel):
+    """All fields optional — send only what you want to change."""
+    product_name:    Optional[str]   = None
+    customer_name:   Optional[str]   = None
+    customer_phone:  Optional[str]   = None
+    category_name:   Optional[str]   = None
+    quantity:        Optional[float] = None
+    notes:           Optional[str]   = None
+    advance_payment: Optional[float] = None
+    delivery_date:   Optional[str]   = None
+    status:          Optional[str]   = None  # pending, ready, delivered, cancelled
+
+
+class PreorderResponse(BaseModel):
+    """Data returned when reading a pre-order."""
+    id:              int
+    product_name:    str
+    customer_name:   Optional[str]   = None
+    customer_phone:  Optional[str]   = None
+    category_name:   Optional[str]   = None
+    quantity:        Optional[float] = None
+    notes:           Optional[str]   = None
+    advance_payment: float
+    delivery_date:   Optional[str]   = None
+    status:          str
+    created_at:      str

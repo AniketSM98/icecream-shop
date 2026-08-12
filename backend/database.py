@@ -112,6 +112,26 @@ def create_tables():
         )
     """)
 
+    # ── Pre-orders Table ─────────────────────────────────────────────
+    # Tracks customer demands — out of stock items, new products, bulk orders
+    # product_name is free text — product may not exist in the system yet
+    # Stock is NOT deducted here — only when the order is fulfilled
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS preorders (
+            id              INTEGER   PRIMARY KEY AUTOINCREMENT,
+            customer_name   TEXT,
+            customer_phone  TEXT,
+            product_name    TEXT      NOT NULL,
+            category_name   TEXT,
+            quantity        REAL,
+            notes           TEXT,
+            advance_payment REAL      DEFAULT 0,
+            delivery_date   TEXT,
+            status          TEXT      DEFAULT 'pending',
+            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()  # save all changes to the database file
     conn.close()   # close the connection
     print("Database tables created successfully.")

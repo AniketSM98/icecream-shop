@@ -32,3 +32,10 @@ export const updateInventory = (id, data) => request(`${BASE_URL}/inventory/${id
 export const getSales        = () => request(`${BASE_URL}/sales`)
 export const createSale      = (data) => request(`${BASE_URL}/sales`, { method: "POST", ...json(data) })
 export const deleteSale      = (id) => request(`${BASE_URL}/sales/${id}`, { method: "DELETE" })
+
+// ── Pre-orders ────────────────────────────────────────────────
+export const getPreorders        = () => request(`${BASE_URL}/preorders`)
+export const getPendingPreorders = () => request(`${BASE_URL}/preorders/pending`)
+export const createPreorder      = (data) => request(`${BASE_URL}/preorders`, { method: "POST", ...json(data) })
+export const updatePreorder      = (id, data) => request(`${BASE_URL}/preorders/${id}`, { method: "PUT", ...json(data) })
+export const deletePreorder      = (id) => request(`${BASE_URL}/preorders/${id}`, { method: "DELETE" })
