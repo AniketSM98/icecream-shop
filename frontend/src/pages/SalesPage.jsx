@@ -5,32 +5,57 @@ const emptyItem = { category_id: '', product_id: '', quantity: 1 }
 
 // ── Fuzzy match: find closest product to spoken name ─────────────────────────
 function fuzzyMatchProduct(spokenName, products) {
-  const spoken = spokenName.toLowerCase().trim()
-  let bestScore = 0
+  const spoken      = spokenName.toLowerCase().trim()
+  const spokenWords = spoken.split(/\s+/).filter(w => w.length > 2) // ignore short noise words
+
+  let bestScore   = 0
   let bestProduct = null
 
   for (const p of products) {
-    const productName = p.name.toLowerCase()
-    const spokenWords = spoken.split(' ').filter(Boolean)
+    const productName  = p.name.toLowerCase()
+    const productWords = productName.split(/\s+/).filter(Boolean)
 
-    // Count how many spoken words appear in the product name
-    const matchCount = spokenWords.filter(w => productName.includes(w)).length
-    const score = matchCount / spokenWords.length
+    // How many product words appear in spoken text (partial match)
+    const productMatchCount = productWords.filter(pw =>
+      spokenWords.some(sw => sw.includes(pw) || pw.includes(sw) || levenshtein(sw, pw) <= 2)
+    ).length
+    const productScore = productMatchCount / productWords.length
 
-    // Also check reverse — product words in spoken text
-    const productWords = productName.split(' ').filter(Boolean)
-    const reverseMatch = productWords.filter(w => spoken.includes(w)).length
-    const reverseScore = reverseMatch / productWords.length
+    // How many spoken words appear in product name
+    const spokenMatchCount = spokenWords.filter(sw =>
+      productWords.some(pw => sw.includes(pw) || pw.includes(sw) || levenshtein(sw, pw) <= 2)
+    ).length
+    const spokenScore = spokenWords.length > 0 ? spokenMatchCount / spokenWords.length : 0
 
-    const finalScore = Math.max(score, reverseScore)
+    // Weight product match higher — we want all product words to match
+    const finalScore = (productScore * 0.7) + (spokenScore * 0.3)
+
     if (finalScore > bestScore) {
-      bestScore = finalScore
+      bestScore   = finalScore
       bestProduct = p
     }
   }
 
-  // Only return a match if confidence is reasonable
   return bestScore >= 0.4 ? bestProduct : null
+}
+
+// ── Levenshtein distance — measures how similar two words are ─────────────────
+// Distance of 0 = identical, 1 = one letter different, 2 = two letters different
+function levenshtein(a, b) {
+  if (a === b) return 0
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+  const matrix = []
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i]
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      matrix[i][j] = b[i-1] === a[j-1]
+        ? matrix[i-1][j-1]
+        : Math.min(matrix[i-1][j-1] + 1, matrix[i][j-1] + 1, matrix[i-1][j] + 1)
+    }
+  }
+  return matrix[b.length][a.length]
 }
 
 // ── Convert spoken word numbers to digits ─────────────────────────────────────
@@ -149,10 +174,28 @@ export default function SalesPage() {
     recognition.lang = 'en-IN'
     recognition.continuous = false
     recognition.interimResults = true
+    recognition.maxAlternatives = 3
 
     recognition.onresult = (e) => {
-      const text = Array.from(e.results).map(r => r[0].transcript).join('')
-      setTranscript(text)
+      // Use only final results with highest confidence
+      // For interim results, show the best alternative
+      let finalText = ''
+      let interimText = ''
+
+      for (const result of e.results) {
+        if (result.isFinal) {
+          // Pick the alternative with highest confidence
+          let best = result[0]
+          for (let i = 1; i < result.length; i++) {
+            if (result[i].confidence > best.confidence) best = result[i]
+          }
+          finalText += best.transcript
+        } else {
+          interimText += result[0].transcript
+        }
+      }
+
+      setTranscript(finalText || interimText)
     }
 
     recognition.onerror = (e) => {
