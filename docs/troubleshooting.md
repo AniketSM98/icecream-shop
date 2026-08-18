@@ -121,6 +121,42 @@ Make sure the app was opened using `start_app.bat` (which uses `--new-window` fl
 
 ---
 
+## Credit / Udhaar Issues
+
+### Credit customer not appearing in Credit page
+The customer is auto-created when a credit sale is recorded. If they don't appear, check the sale was recorded with payment mode "credit" and a customer name was entered.
+
+### Payment amount exceeds balance error
+You cannot pay more than the outstanding balance. Enter the exact balance amount to fully settle.
+
+### Credit sale not showing in dashboard/reports
+Credit sales are included in all reports and dashboard by default. If missing, check the date range in reports.
+
+---
+
+## Pre-order Issues
+
+### Pre-order not reducing inventory
+This is by design — pre-orders do not affect inventory. Only manual stock updates or regular sales deduct stock.
+
+---
+
+## Voice Command Issues
+
+### Voice button not appearing
+Browser does not support Web Speech API. Use Chrome — it is the only browser with full support.
+
+### App says "Mic error: not-allowed"
+Microphone permission not granted. Click the lock icon in Chrome address bar → allow microphone access.
+
+### Words not matching products
+The fuzzy matcher handles up to 2 character differences. If product names are very different from how staff pronounce them, consider renaming products to match spoken names.
+
+### Works close but not from a distance
+Hardware limitation of the laptop microphone. Recommend a USB desk microphone (~Rs.300-500).
+
+---
+
 ## Performance
 
 ### App is slow to load first time

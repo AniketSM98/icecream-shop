@@ -168,6 +168,71 @@ Dashboard | Sales | Inventory | Products | Categories | Reports
 
 ---
 
+## Credit / Udhaar
+
+### New DB tables
+- `credit_customers`: id, name, phone, created_at
+- `credit_payments`: id, customer_id, amount_paid, payment_mode, note, created_at
+- Alter `sales` table: add `is_credit INTEGER DEFAULT 0`, `customer_id INTEGER`
+
+### Sales page changes
+- Add "credit" as third payment mode option
+- When credit selected, show customer name input (required)
+- Pass customer_name in sale payload
+- Auto-create customer by name (case-insensitive) if not exists
+- Deduct inventory immediately on credit sale
+- Credit badge shown red in recent sales table
+
+### Backend router: /api/credit
+- GET /api/credit/customers — all with balance (total_credit - total_paid)
+- POST /api/credit/customers — manual create
+- GET /api/credit/customers/{id} — detail with sales + payments
+- POST /api/credit/customers/{id}/pay — partial or full payment (cannot exceed balance)
+
+### Frontend: CreditPage.jsx
+- Table: customer, phone, total credit, total paid, balance (red if >0, green "Settled" if 0)
+- Click row to expand purchase + payment history
+- Record Payment modal: amount, cash/UPI, note
+- Total outstanding shown in page header
+
+---
+
+## Pre-orders
+
+### New DB table
+- `preorders`: id, product_name (required), customer_name, customer_phone, category_name, quantity, notes, advance_payment, delivery_date, status (pending/ready/delivered/cancelled), created_at
+
+### Backend router: /api/preorders
+- GET /api/preorders — all newest first
+- GET /api/preorders/pending — only pending and ready
+- POST /api/preorders — product_name required, all others optional
+- PUT /api/preorders/{id} — update any field including status
+- DELETE /api/preorders/{id}
+
+### Frontend: PreordersPage.jsx
+- Add form: product name (required), customer, phone, category, qty, delivery date, advance payment, notes
+- Filter tabs: All | Pending | Ready | Delivered | Cancelled with counts
+- Table with status dropdown per row for quick status updates
+
+---
+
+## Voice Command (SalesPage.jsx)
+
+### Features
+- Web Speech API (Chrome built-in, no install)
+- Click to start/stop listening
+- Shows transcript in purple box for review
+- "Fill Form" button applies parsed items to form
+- Staff verify and click Record Sale
+
+### Parsing logic (pure JS functions in SalesPage.jsx)
+- normalizeNumbers(): converts word numbers to digits (two → 2)
+- parseSpeech(): detects payment mode, splits by comma or number boundaries, extracts qty + product name per chunk
+- fuzzyMatchProduct(): Levenshtein distance ≤ 2 per word, ignores short noise words, weighted scoring
+- levenshtein(): standard edit distance implementation
+
+---
+
 ## Start/Stop Scripts
 
 ### start_app.bat

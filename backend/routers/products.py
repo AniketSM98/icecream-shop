@@ -41,21 +41,21 @@ def calculate_profit(selling_price: float, actual_cost: float) -> float:
     return round(selling_price - actual_cost, 2)
 
 
-def calculate_profit_percent(profit: float, actual_cost: float) -> float:
+def calculate_profit_percent(profit: float, selling_price: float) -> float:
     """
-    Calculates profit percentage on actual cost (Option 1).
-    profit_percent = (profit / actual_cost) * 100
+    Calculates profit margin as % of selling price.
+    profit_percent = (profit / selling_price) * 100
 
     Example:
-      profit = 17.9, actual_cost = 32.1
-      profit_percent = (17.9 / 32.1) * 100 = 55.77%
+      selling_price = 50, actual_cost = 32.1, profit = 17.9
+      profit_percent = (17.9 / 50) * 100 = 35.8%
 
-    Meaning: for every ₹100 spent, you earn ₹55.77 profit.
-    Returns 0 if actual_cost is 0 to avoid division by zero.
+    Meaning: 35.8% of every sale is profit.
+    Returns 0 if selling_price is 0 to avoid division by zero.
     """
-    if actual_cost == 0:
+    if selling_price == 0:
         return 0.0
-    return round((profit / actual_cost) * 100, 2)
+    return round((profit / selling_price) * 100, 2)
 
 
 @router.get("/", response_model=list[ProductResponse])
@@ -90,7 +90,7 @@ def get_all_products():
     for row in rows:
         actual_cost    = calculate_actual_cost(row["cost_price"], row["discount_percent"], row["tax_percent"])
         profit         = calculate_profit(row["selling_price"], actual_cost)
-        profit_percent = calculate_profit_percent(profit, actual_cost)
+        profit_percent = calculate_profit_percent(profit, row["selling_price"])
         result.append({
             "id":               row["id"],
             "name":             row["name"],
@@ -160,7 +160,7 @@ def create_product(data: ProductCreate):
 
     actual_cost    = calculate_actual_cost(data.cost_price, data.discount_percent, data.tax_percent)
     profit         = calculate_profit(data.selling_price, actual_cost)
-    profit_percent = calculate_profit_percent(profit, actual_cost)
+    profit_percent = calculate_profit_percent(profit, data.selling_price)
 
     return {
         "id":               new_id,
@@ -228,7 +228,7 @@ def update_product(product_id: int, data: ProductUpdate):
 
     actual_cost    = calculate_actual_cost(new_cost_price, new_discount_percent, new_tax_percent)
     profit         = calculate_profit(new_selling_price, actual_cost)
-    profit_percent = calculate_profit_percent(profit, actual_cost)
+    profit_percent = calculate_profit_percent(profit, new_selling_price)
 
     return {
         "id":               product_id,

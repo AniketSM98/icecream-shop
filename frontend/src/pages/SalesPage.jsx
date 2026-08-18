@@ -457,7 +457,7 @@ export default function SalesPage() {
                 </span>
 
                 <input
-                  type="number" min="1" step="1"
+                  type="number" min="0.1" step="0.1"
                   value={item.quantity}
                   onChange={e => handleQtyChange(i, e.target.value)}
                   style={{ padding: '9px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.9rem', color: '#333', background: 'white' }}

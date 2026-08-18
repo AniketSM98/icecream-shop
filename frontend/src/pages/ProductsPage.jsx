@@ -85,7 +85,7 @@ export default function ProductsPage() {
   const previewSell    = Number(form.selling_price) || 0
   const actualCost     = previewCost - (previewCost * previewDisc / 100) + (previewCost * previewTax / 100)
   const profit         = previewSell - actualCost
-  const profitPct      = actualCost > 0 ? (profit / actualCost * 100).toFixed(1) : 0
+  const profitPct      = previewSell > 0 ? (profit / previewSell * 100).toFixed(1) : 0
 
   return (
     <div>

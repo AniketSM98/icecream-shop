@@ -7,8 +7,8 @@ Ideas discussed or considered during development — not yet built.
 ## High Priority
 
 ### User Login / Roles
-- Owner login: full access to all pages including reports
-- Staff login: only Sales and Inventory pages
+- Owner login: full access to all pages including reports and credit
+- Staff login: only Sales, Inventory, Pre-orders pages
 - Why deferred: adds complexity, not needed for single-user shop right now
 
 ### Edit Sale
@@ -20,6 +20,10 @@ Ideas discussed or considered during development — not yet built.
 - Print or PDF receipt after recording a sale
 - Useful for customer-facing counter
 - Can be added using browser's window.print() or a library like jsPDF
+
+### Credit Summary in Dashboard
+- Show total outstanding credit amount on Dashboard
+- Quick link to Credit page from Dashboard
 
 ---
 
@@ -42,6 +46,19 @@ Ideas discussed or considered during development — not yet built.
 - Update multiple products' stock at once (e.g. after weekly delivery)
 - Currently must update one by one
 
+### Pre-order → Sale Conversion
+- When a pre-order is marked "delivered", auto-create a sale record
+- Currently staff must manually record the sale separately
+
+### Credit in Reports
+- Show credit sales vs cash/upi breakdown in Reports
+- Show outstanding credit trend over time
+
+### Better Voice Command
+- Currently limited by laptop microphone distance
+- Consider push-to-talk hardware button (USB footswitch ~Rs.500)
+- Or dedicated USB desk microphone (~Rs.300-500)
+
 ---
 
 ## Lower Priority
@@ -59,7 +76,6 @@ Ideas discussed or considered during development — not yet built.
 ### PostgreSQL Migration
 - SQLite works fine for single-machine use
 - Switch to PostgreSQL only if multi-device sync or multi-branch is needed
-- Would need a migration script to move existing data
 
 ### Cloud Hosting
 - Deliberately avoided — shop runs fully local
@@ -69,9 +85,13 @@ Ideas discussed or considered during development — not yet built.
 - Scan product barcode instead of selecting from dropdown
 - Useful for very large product catalogs
 
-### Daily Sales Summary Email/WhatsApp
+### Daily Sales Summary WhatsApp/Email
 - Send end-of-day summary to owner's phone automatically
-- Would need internet access and an email/messaging API
+- Would need internet access and a messaging API
+
+### Customer Phone in Credit
+- Currently credit customers identified by name only
+- Add phone number field for better identification and WhatsApp reminders
 
 ---
 
@@ -82,9 +102,15 @@ Ideas discussed or considered during development — not yet built.
 - Could add more specific error codes and messages
 
 ### Loading States
-- Some pages don't show loading spinners
+- Some pages don't show loading spinners on initial load
 - Could add skeleton loaders for better UX
 
 ### Input Validation
 - Frontend validates required fields but not ranges
 - Example: selling price should be greater than actual cost
+- Credit payment amount validated on backend but not frontend
+
+### Voice Command Reliability
+- Parser handles no-comma speech and word numbers
+- Levenshtein fuzzy matching covers typos up to 2 characters
+- Still affected by background noise — hardware fix recommended

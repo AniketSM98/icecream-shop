@@ -2,141 +2,124 @@
 
 ## Stage 1 — Categories ✅ Done
 **What:** CRUD endpoints for product categories
-**Endpoints:**
-- GET    /api/categories       → list all
-- POST   /api/categories       → create
-- PUT    /api/categories/{id}  → update
-- DELETE /api/categories/{id}  → delete
-
+**Endpoints:** GET/POST /api/categories, PUT/DELETE /api/categories/{id}
 **Key decisions:**
-- Each category has a `unit` field (cone, cup, gram, ml, piece)
-- Products inherit unit from their category — not stored on product itself
-- Duplicate category names are rejected (UNIQUE constraint)
+- Each category has a `unit` field inherited by all products
+- Duplicate category names rejected (UNIQUE constraint)
 
 ---
 
 ## Stage 2 — Products ✅ Done
 **What:** CRUD endpoints for products with pricing calculations
-**Endpoints:**
-- GET    /api/products       → list all (with calculated fields)
-- POST   /api/products       → create (auto-creates inventory record)
-- PUT    /api/products/{id}  → update
-- DELETE /api/products/{id}  → delete (also deletes inventory record)
-
+**Endpoints:** GET/POST /api/products, PUT/DELETE /api/products/{id}
 **Key decisions:**
-- Price fields: cost_price, discount_percent, tax_percent, selling_price
-- Calculated fields returned in response: actual_cost, profit, profit_percent
 - Formula: actual_cost = cost_price - (cost_price × discount%) + (cost_price × tax%)
-- Creating a product automatically creates an inventory row at quantity 0
+- Creating a product auto-creates inventory row at qty 0
+- Deleting a product also deletes its inventory row
 
 ---
 
 ## Stage 3 — Inventory ✅ Done
 **What:** Track stock levels, low stock alerts, manual restocking
-**Endpoints:**
-- GET /api/inventory       → all inventory with stock levels
-- GET /api/inventory/low   → only low stock items
-- PUT /api/inventory/{id}  → update quantity and/or threshold
-
+**Endpoints:** GET /api/inventory, GET /api/inventory/low, PUT /api/inventory/{id}
 **Key decisions:**
-- One inventory row per product (created automatically with product)
+- One inventory row per product, auto-created with product
 - low_stock_threshold default is 10
-- is_low_stock is a calculated field (quantity < threshold)
-- last_updated timestamp auto-updates on every stock change
+- is_low_stock is calculated (quantity < threshold)
 
 ---
 
 ## Stage 4 — Sales ✅ Done
-**What:** Record sales transactions, auto-deduct inventory
-**Endpoints:**
-- POST   /api/sales       → record a sale
-- GET    /api/sales       → list all sales (newest first)
-- GET    /api/sales/{id}  → single sale with items
-- DELETE /api/sales/{id}  → delete sale and restore inventory
-
+**What:** Record sales, auto-deduct inventory, delete with restore
+**Endpoints:** POST/GET /api/sales, GET /api/sales/{id}, DELETE /api/sales/{id}
 **Key decisions:**
-- A sale can have multiple items (e.g., 2 chocolate cones + 1 mango cup)
-- unit_price stored at time of sale (in case price changes later)
-- Stock validation before recording — rejects if insufficient stock with product name in error
-- Inventory is deducted atomically with sale creation
-- Payment modes: "cash" or "upi"
-- Delete sale restores inventory automatically (for wrong entries)
+- Stock validated before recording — error shows product name + category
+- Inventory deducted atomically with sale creation
+- Delete sale restores inventory for all items
+- Payment modes: cash, upi, credit
 
 ---
 
 ## Stage 5 — React Frontend ✅ Done
 **What:** Full UI for all backend features
-**Pages built:**
-- Sales page — category filter → product dropdown → auto price → qty → discount on total → cash/UPI → delete sale
-- Inventory page — stock table with low stock highlights, update stock modal
-- Products page — table with profit display, add/edit/delete with live profit preview
-- Categories page — add/edit/delete
-
-**Tech:** React + Vite, React Router for navigation
+**Pages:** Sales, Inventory, Products, Categories, Dashboard, Reports, Pre-orders, Credit
 **Key decisions:**
-- Category dropdown first, then filtered product dropdown
-- Unit price auto-filled from product data — not editable per item
-- Discount applied on total amount (not per unit)
-- Error messages from backend shown directly in UI
-- Currency shown as "Rs." (not ₹) to avoid Windows PowerShell 5.1 encoding issues
-- `git checkout origin/main -- <file>` used on shop laptop instead of `git pull` due to Vite setup mismatch
+- Category dropdown first → filtered product dropdown
+- Unit price auto-filled, discount on total only
+- Currency shown as "Rs." (not ₹) — Windows encoding issue
+- `git checkout origin/main -- <file>` used on shop laptop
 
 ---
 
 ## Stage 6 — Dashboard ✅ Done
 **What:** Today's KPIs at a glance
 **Endpoint:** GET /api/dashboard
-
-**KPIs shown:**
-- Sales: Total sales, transactions, items sold, avg transaction
-- Profit: Total profit, profit margin
-- Payments: Cash total, UPI total, cash/UPI %
-- Low stock alert count
-- Top 5 products today (qty, revenue, profit)
-- Low stock items table
-
-**Key decisions:**
-- Profit calculated from actual cost (after discount and tax) not just cost price
-- Refresh button to reload without page refresh
+**KPIs:** Total sales, profit, margin, transactions, items sold, avg transaction, cash/UPI split, low stock alerts, top 5 products
 
 ---
 
 ## Stage 7 — Reports ✅ Done
 **What:** Historical analysis with date range filter
-**Endpoints:**
-- GET /api/reports/summary        → financial summary for date range
-- GET /api/reports/by-hour        → sales grouped by hour of day
-- GET /api/reports/by-day         → sales grouped by day of week
-- GET /api/reports/top-products   → top 10 products by qty sold
-- GET /api/reports/payment-modes  → daily cash vs UPI breakdown
-
-**Features:**
-- Quick range shortcuts: Today, Last 7 Days, This Month
-- Summary KPIs: revenue, profit, margin, transactions, items sold, avg transaction
-- Peak hours table
-- Busiest day of week table
-- Top products with profit margin per product
-- Daily payment breakdown table
+**Endpoints:** GET /api/reports/summary, by-hour, by-day, top-products, payment-modes
+**Features:** Quick range shortcuts, all KPIs, peak hours, busiest day, top products with margin, daily payment breakdown
 
 ---
 
 ## Stage 8 — Start/Stop Scripts ✅ Done
-**What:** One-click `.bat` files for non-technical staff
-- `start_app.bat` — starts backend + frontend, opens app in new Chrome window
-- `stop_app.bat` — stops backend, frontend, closes Chrome window
-
+**What:** One-click bat files for staff
+**Files:** start_app.bat, stop_app.bat (keep in project root, use Desktop shortcuts)
 **Key decisions:**
-- Uses `%~dp0` for relative paths — bat files must stay in project folder
-- Create Desktop shortcuts pointing to the bat files (don't move the bat files)
-- Chrome opened with `--new-window` flag so it's a dedicated window
-- `stop_app.bat` uses PowerShell to close only the Chrome window showing localhost:5173
+- Chrome opened with --new-window flag
+- stop_app.bat uses PowerShell to close Chrome window showing localhost:5173
+- Uses %~dp0 relative paths — bat files must stay in project folder
 
 ---
 
 ## Stage 9 — Google Drive Backup 🔄 Pending
-**What:** Ensure SQLite database file is inside Google Drive synced folder
-- Install Google Drive Desktop on shop laptop
-- Create `icecream-backup/` folder inside Google Drive sync folder
-- Update `DATABASE_PATH` in `database.py` to point to that folder
-- Move existing `.db` file there
-- Test sync and document restore process
+**What:** Move SQLite DB to Google Drive synced folder
+**Steps:**
+1. Install Google Drive Desktop on shop laptop
+2. Create `icecream-backup/` folder inside Google Drive sync folder
+3. Update `DATABASE_PATH` in `backend/database.py`
+4. Move existing `.db` file there
+5. Test sync and document restore process
+
+---
+
+## Stage 10 — Voice Command ✅ Done
+**What:** Speak items to fill the Sales form
+**Implementation:** Web Speech API (Chrome built-in, no install)
+**Features:**
+- Click to start/stop listening
+- Fuzzy matching with Levenshtein distance — handles typos and partial names
+- Word number conversion (two → 2)
+- Multiple items in one sentence with or without commas
+- Shows transcript for review before filling form
+- Staff verify filled form before clicking Record Sale
+**Known limitation:** Background noise affects accuracy — recommend USB desk mic
+
+---
+
+## Stage 11 — Pre-orders ✅ Done
+**What:** Track customer demands, out-of-stock requests, bulk orders
+**Endpoints:** GET/POST /api/preorders, GET /api/preorders/pending, PUT/DELETE /api/preorders/{id}
+**Key decisions:**
+- product_name is free text — product may not exist in system
+- All fields optional except product_name
+- Status: pending → ready → delivered → cancelled
+- Inventory NOT affected — only deducted when manually fulfilled
+
+---
+
+## Stage 12 — Credit / Udhaar ✅ Done
+**What:** Track customers who take products and pay later
+**Endpoints:** GET/POST /api/credit/customers, GET /api/credit/customers/{id}, POST /api/credit/customers/{id}/pay
+**Key decisions:**
+- "Credit" added as third payment mode in Sales page
+- Customer auto-created by name on first credit sale (case-insensitive lookup)
+- Inventory deducted immediately on credit sale
+- Partial payments allowed — balance reduces gradually
+- Balance = total credit taken - total paid
+- Credit sales included in dashboard and reports
+- New DB tables: credit_customers, credit_payments
+- sales table altered to add is_credit and customer_id columns
